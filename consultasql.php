@@ -1,12 +1,13 @@
 	<!-- Program: mysqlsend.php 
 		Programa para enviar consultas en SQL a MySQL Server
 		y mostrar los resultados
-		Del Libro PHP y MySQL para Dummys
-		Para PHP 5
+		Del Libro PHP y MySQL para Dummys PHP 5
+		Version actualizada a mysqli
+		Presenta varias vulnerabilidades
 	-->
 <html>
 	<head>
-		<title>Enviar consultas a CSP</title>
+		<title>Enviar consultas</title>
                 <meta charset="utf-8">
                 <meta name="viewport" content="width=device-width">
 	</head>
@@ -15,24 +16,26 @@
 	
 		<?php
 			$host="localhost";
-			$user="escriba_su_usuario";
-			$password="escriba_su_contraseña";
-                        /*cambia el charset para mostrar acentos de UTF-8 a ISO*/
-                        header('Content-Type: text/html; charset=iso-8859-1');
+			$user="root";
+			$password="";
+
+			date_default_timezone_set('America/Mexico_City');
+			/*cambia el charset para mostrar acentos de UTF-8 a ISO*/
+			header('Content-Type: text/html; charset=iso-8859-1');
 			/*Seccion qie ejecuta la consulta*/
 
 		if(@$_GET['form'] == "yes")
 		{
-			mysql_connect($host,$user,$password);
-			mysql_select_db($_POST['database']);
+			$conexion = mysqli_connect($host,$user,$password);
+			mysqli_select_db($conexion, $_POST['database']);
 			$query = stripSlashes($_POST['query']);
-			$result = mysql_query($query);
+			$result = mysqli_query($conexion, $query);
 			echo "Base de Datos Seleccionada: <b>{$_POST['database']}</b><br>
 				 Consulta: <b>$query</b><h3>Resultados</h3><hr>";
-			if($result == 0)
-				echo "<b> Error ".mysql_errno().": ".mysql_error().
+			if($result == false)
+				echo "<b> Error ".mysqli_errno($conexion).": ".mysqli_error($conexion).
 					 "</b>";
-			elseif (@mysql_num_rows ($result) == 0)
+			elseif (@mysqli_num_rows ($result) == 0)
 				echo("<b>Consulta Completada. NO se encontraron resultados.
 						</b><br>");
 			else
@@ -40,19 +43,18 @@
 			 echo "<table border='1'>
 			  <thead>
 			   <tr>";
-			    for($i = 0;$i < mysql_num_fields($result);$i++)
-				{
-				echo  "<th>".mysql_field_name($result,$i).
-					 "</th>";
-				}
+			   $field_name = mysqli_fetch_fields ($result);	// tenemos un array asociativo de objetos con atributos (clave -> valor)
+			   foreach ($field_name as $field) {
+				echo "<th> $field->name </th>";
+			   }
 				echo " </tr>
 					  </thead>
 					 <tbody>";
-						for ($i = 0; $i < mysql_num_rows($result); $i++)
+						for ($i = 0; $i < mysqli_num_rows($result); $i++)
 						{
 						echo "<tr>";
-						 $row = mysql_fetch_row($result);
-						 for($j = 0;$j < mysql_num_fields($result);$j++)
+						 $row = mysqli_fetch_row($result);
+						 for($j = 0;$j < mysqli_num_fields($result);$j++)
 						 {
 						 	echo ("<td>" . $row[$j] . "</td>");
 						 }
@@ -88,7 +90,7 @@
 			  method="POST">
 		  <table>
 		   <tr>
-		     <td align=right><b> Escriba el nombre de la base de datos </b></td>
+		     <td align="right"><b> Escriba el nombre de la base de datos </b></td>
 			 <td><input type="text" name="database"
 			 			value=<?php echo @$_POST['database'] ?> ></td>
 			 </tr>
